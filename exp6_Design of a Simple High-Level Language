@@ -1,0 +1,208 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <map>
+#include <sstream>
+#include <cctype>
+
+using namespace std;
+
+// Symbol Table to store variables and their integer values
+map<string, int> symbolTable;
+
+// Function to evaluate arithmetic and logical expressions
+int evaluateExpression(const string& expr) {
+    stringstream ss(expr);
+    string token1, op, token2;
+    ss >> token1;
+
+    if (token1.empty()) return 0;
+
+    // Resolve first operand (number or variable)
+    int val1 = (isdigit(token1[0]) || (token1[0] == '-' && token1.length() > 1))
+               ? stoi(token1) : symbolTable[token1];
+
+    if (!(ss >> op)) return val1;
+
+    ss >> token2;
+    // Resolve second operand (number or variable)
+    int val2 = (isdigit(token2[0]) || (token2[0] == '-' && token2.length() > 1))
+               ? stoi(token2) : symbolTable[token2];
+
+    // Arithmetic Operations
+    if (op == "+") return val1 + val2;
+    if (op == "-") return val1 - val2;
+    if (op == "*") return val1 * val2;
+    if (op == "/") return val2 != 0 ? val1 / val2 : 0;
+
+    // Logical & Relational Operations
+    if (op == ">")  return val1 > val2;
+    if (op == "<")  return val1 < val2;
+    if (op == "==") return val1 == val2;
+    if (op == "!=") return val1 != val2;
+    if (op == ">=") return val1 >= val2;
+    if (op == "<=") return val1 <= val2;
+    if (op == "&&") return val1 && val2;
+    if (op == "||") return val1 || val2;
+
+    return 0;
+}
+
+// Execution Engine / Interpreter for the High-Level Language
+void executeProgram(const vector<string>& code) {
+    int pc = 0; // Program Counter
+    int n = code.size();
+
+    while (pc < n) {
+        string line = code[pc];
+        stringstream ss(line);
+        string command;
+        ss >> command;
+
+        if (command.empty() || command[0] == '#') {
+            pc++;
+            continue;
+        }
+
+        // 1. PRINTER Instruction
+        if (command == "PRINT") {
+            string expr;
+            getline(ss, expr);
+            size_t start = expr.find_first_not_of(" \t");
+            if (start != string::npos) expr = expr.substr(start);
+
+            if (!expr.empty() && expr[0] == '"') { // Print literal string
+                cout << expr.substr(1, expr.length() - 2) << endl;
+            } else { // Print evaluated expression
+                cout << evaluateExpression(expr) << endl;
+            }
+            pc++;
+        }
+        // 2. BRANCH Instruction: IF condition THEN
+        else if (command == "IF") {
+            string rest;
+            getline(ss, rest);
+            size_t thenPos = rest.find("THEN");
+            string condStr = (thenPos != string::npos) ? rest.substr(0, thenPos) : rest;
+            int cond = evaluateExpression(condStr);
+
+            if (cond) {
+                pc++; // Condition met: enter IF block
+            } else {
+                int depth = 1;
+                pc++;
+                while (pc < n && depth > 0) {
+                    stringstream lineSS(code[pc]);
+                    string cmd;
+                    lineSS >> cmd;
+                    if (cmd == "IF") depth++;
+                    else if (cmd == "ENDIF" && depth == 1) break;
+                    else if (cmd == "ELSE" && depth == 1) { pc++; break; }
+                    else if (cmd == "ENDIF") depth--;
+                    pc++;
+                }
+            }
+        }
+        else if (command == "ELSE") {
+            int depth = 1;
+            pc++;
+            while (pc < n && depth > 0) {
+                stringstream lineSS(code[pc]);
+                string cmd;
+                lineSS >> cmd;
+                if (cmd == "IF") depth++;
+                else if (cmd == "ENDIF") {
+                    depth--;
+                    if (depth == 0) break;
+                }
+                pc++;
+            }
+        }
+        else if (command == "ENDIF") {
+            pc++;
+        }
+        // 3. LOOP Instruction: WHILE condition DO
+        else if (command == "WHILE") {
+            string rest;
+            getline(ss, rest);
+            size_t doPos = rest.find("DO");
+            string condStr = (doPos != string::npos) ? rest.substr(0, doPos) : rest;
+            int cond = evaluateExpression(condStr);
+
+            if (cond) {
+                pc++; // Condition met: enter loop body
+            } else {
+                int depth = 1;
+                pc++;
+                while (pc < n && depth > 0) {
+                    stringstream lineSS(code[pc]);
+                    string cmd;
+                    lineSS >> cmd;
+                    if (cmd == "WHILE") depth++;
+                    else if (cmd == "ENDWHILE") {
+                        depth--;
+                        if (depth == 0) break;
+                    }
+                    pc++;
+                }
+                pc++; // Move past ENDWHILE
+            }
+        }
+        else if (command == "ENDWHILE") {
+            int depth = 1;
+            pc--;
+            while (pc >= 0 && depth > 0) {
+                stringstream lineSS(code[pc]);
+                string cmd;
+                lineSS >> cmd;
+                if (cmd == "ENDWHILE") depth++;
+                else if (cmd == "WHILE") {
+                    depth--;
+                    if (depth == 0) break;
+                }
+                pc--;
+            }
+        }
+        // 4. ASSIGNMENT & ARITHMETIC / LOGICAL Statement
+        else {
+            string varName = command;
+            string eq;
+            ss >> eq;
+            string expr;
+            getline(ss, expr);
+            if (eq == "=") {
+                symbolTable[varName] = evaluateExpression(expr);
+            }
+            pc++;
+        }
+    }
+}
+
+int main() {
+    cout << "=== INTERPRETER FOR HIGH-LEVEL LANGUAGE ===\n\n";
+
+    // Sample high-level program using variables, math, logic, branching & looping
+    vector<string> program = {
+        "x = 5",
+        "y = 10",
+        "sum = x + y",
+        "PRINT sum",
+        "IF sum > 12 THEN",
+        "    PRINT 1",
+        "ELSE",
+        "    PRINT 0",
+        "ENDIF",
+        "counter = 1",
+        "WHILE counter <= 3 DO",
+        "    PRINT counter",
+        "    counter = counter + 1",
+        "ENDWHILE"
+    };
+
+    cout << "Executing Code...\n";
+    cout << "--------------------\n";
+    executeProgram(program);
+
+    return 0;
+}
+
