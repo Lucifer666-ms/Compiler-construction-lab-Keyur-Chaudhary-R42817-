@@ -1,0 +1,86 @@
+#include <iostream>
+#include <vector>
+
+using namespace std;
+
+// -----------------------------------------------------------------------------
+// 1. STRENGTH REDUCTION
+// Replaces expensive operations (e.g., multiplication inside a loop)
+// with cheaper ones (e.g., addition or bitwise shifts).
+// -----------------------------------------------------------------------------
+void strengthReductionDemo() {
+    cout << "--- 1. STRENGTH REDUCTION ---\n";
+    
+    int n = 5;
+    cout << "Unoptimized (Multiplication in loop):\n  ";
+    for (int i = 1; i <= n; ++i) {
+        int val = i * 8; // Expensive multiplication
+        cout << val << " ";
+    }
+    cout << "\n";
+
+    cout << "Optimized (Bit-shift / Addition):\n  ";
+    int val = 8;
+    for (int i = 1; i <= n; ++i) {
+        cout << val << " ";
+        val += 8; // Replaced multiplication with addition
+    }
+    cout << "\n\n";
+}
+
+// -----------------------------------------------------------------------------
+// 2. DEAD CODE ELIMINATION
+// Removes unreachable code or computations whose results are never used.
+// -----------------------------------------------------------------------------
+void deadCodeEliminationDemo() {
+    cout << "--- 2. DEAD CODE ELIMINATION ---\n";
+    
+    int a = 10, b = 20;
+    
+    // Unoptimized version contains dead variables and unreachable code
+    /*
+    int unusedVar = a + b; // Unused variable
+    if (false) {
+        cout << "Unreachable code executed!\n";
+    }
+    */
+
+    // Optimized version removes redundant calculations and dead branches
+    int result = a + b;
+    cout << "Optimized code result (Dead code removed): " << result << "\n\n";
+}
+
+// -----------------------------------------------------------------------------
+// 3. FREQUENCY REDUCTION (Loop-Invariant Code Motion)
+// Moves invariant computations out of the loop so they aren't recalculated unnecessarily.
+// -----------------------------------------------------------------------------
+void frequencyReductionDemo() {
+    cout << "--- 3. FREQUENCY REDUCTION ---\n";
+    
+    int a = 5, b = 10;
+    int arr[5] = {1, 2, 3, 4, 5};
+
+    cout << "Unoptimized (Invariants computed inside loop):\n  ";
+    for (int i = 0; i < 5; ++i) {
+        int scale = a + b; // Computed 5 times unnecessarily
+        cout << arr[i] * scale << " ";
+    }
+    cout << "\n";
+
+    cout << "Optimized (Invariant moved outside loop):\n  ";
+    int scale = a + b; // Moved outside the loop
+    for (int i = 0; i < 5; ++i) {
+        cout << arr[i] * scale << " ";
+    }
+    cout << "\n\n";
+}
+
+int main() {
+    cout << "=== SOURCE CODE OPTIMIZATION DEMONSTRATION ===\n\n";
+    
+    strengthReductionDemo();
+    deadCodeEliminationDemo();
+    frequencyReductionDemo();
+
+    return 0;
+}
